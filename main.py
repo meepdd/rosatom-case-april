@@ -1,7 +1,9 @@
 import pickle
+
+import numpy as np
 from flask import Flask, request, jsonify
-import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
+
 
 # Загрузка модели
 with open('pickle_model.pkl', 'rb') as f:
@@ -13,10 +15,18 @@ with open('vectorizer.pkl', 'rb') as f:
 
 app = Flask(__name__)
 
+@app.route('/')
+def form():
+    return '''<form action="/predict" method="POST">
+                  <label for="text">Введите текст:</label><br>
+                  <input type="text" id="text" name="text"><br><br>
+                  <input type="submit" value="Отправить">
+              </form>'''
+
 @app.route('/predict', methods=['POST'])
 def predict():
     # Получение данных из POST-запроса
-    data = request.json
+    data = request.form
     text = data['text']
 
     # Векторизация текста
@@ -27,12 +37,10 @@ def predict():
     probability = model.predict_proba(text_vec)[0]
 
     # Формирование ответа в формате JSON
-    response = {'prediction': prediction, 'probability': probability.tolist()}
+    probability = np.array(probability)
+    response = {'prediction': int(prediction), 'probability': probability.tolist()}
     return jsonify(response)
 
-@app.route('/')
-def index():
-    return 'Hello, World!'
 
 if __name__ == '__main__':
     app.run(debug=True)
